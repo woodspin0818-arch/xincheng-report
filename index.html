@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>加推效果评估报告</title>
+<style>
+  :root{
+    /* Claude 风配色：暖白纸感 + 赤陶土 + 墨黑 */
+    --navy:#2b2723;        /* 墨黑（替代深蓝，用作表头/标题） */
+    --navy-2:#3d3730;      /* 次级墨色 */
+    --ink:#2b2723;
+    --ink-2:#5c544a;
+    --ink-3:#8f867a;
+    --line:#e6dfd4;        /* 暖灰描边 */
+    --line-2:#f1ece3;
+    --paper:#fbfaf7;       /* 暖白纸底 */
+    --band:#f7f4ee;        /* 隔行暖灰 */
+    --blue:#bd5d3a;        /* 主强调＝赤陶土 */
+    --blue-l:#f7ece6;      /* 浅陶土底 */
+    --red:#a8432a;         /* 深陶土（负向） */
+    --gold:#c9a227;
+    --green:#4a7c59;       /* 柔和橄榄绿（正向） */
+    --clay:#bd5d3a;
+    --clay-l:#f7ece6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    background:#efeae1;
+    font-family:"Songti SC","Noto Serif SC",Georgia,"PingFang SC","Microsoft YaHei",serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    font-variant-numeric:tabular-nums;
+  }
+  .sheet{
+    width:1240px;margin:0 auto;background:var(--paper);
+    position:relative;
+  }
+  .sheet + .sheet{margin-top:34px;}
+
+  /* ================= 页眉 ================= */
+  .hd{
+    padding:34px 62px 0 62px;
+    display:flex;justify-content:space-between;align-items:flex-start;
+  }
+  .hd .l .kicker{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:11.5px;letter-spacing:.3em;color:var(--ink-3);font-weight:600;
+  }
+  .hd .l h1{
+    font-size:33px;font-weight:700;color:var(--navy);
+    letter-spacing:2px;margin-top:11px;line-height:1.2;
+  }
+  .hd .l .sub{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:13px;color:var(--ink-2);margin-top:11px;letter-spacing:.02em;
+  }
+  .hd .r{text-align:right;padding-top:6px;}
+  .hd .r .pg{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:11px;letter-spacing:.18em;color:var(--clay);font-weight:700;
+  }
+  .hd .r .pr{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:12px;color:var(--ink-3);margin-top:9px;line-height:1.7;
+  }
+  .rule{height:2px;background:var(--clay);margin:22px 62px 0 62px;}
+  .rule.thin{height:1px;background:var(--line);margin:0 62px;}
+
+  /* ================= 结论 ================= */
+  .verdict{padding:30px 62px 26px 62px;}
+  .verdict .tag{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    display:inline-block;font-size:11px;font-weight:700;letter-spacing:.16em;
+    color:var(--clay);border-bottom:2px solid var(--clay);padding-bottom:4px;
+  }
+  .verdict h2{
+    font-size:32px;font-weight:700;color:var(--navy);
+    line-height:1.5;margin-top:19px;letter-spacing:.5px;
+  }
+  .verdict h2 em{font-style:normal;color:var(--clay);}
+  .verdict .note{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:13.5px;color:var(--ink-2);line-height:2;margin-top:16px;
+  }
+
+  /* ================= 指标条 ================= */
+  .strip{
+    margin:2px 62px 0 62px;border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);display:flex;
+  }
+  .strip .it{flex:1;padding:20px 0 20px 0;text-align:center;position:relative;}
+  .strip .it + .it:before{
+    content:"";position:absolute;left:0;top:22px;bottom:22px;width:1px;background:var(--line);
+  }
+  .strip .it .k{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:12px;color:var(--ink-3);font-weight:600;letter-spacing:.04em;
+  }
+  .strip .it .v{
+    font-size:32px;font-weight:700;color:var(--navy);margin-top:10px;letter-spacing:-.5px;
+  }
+  .strip .it .v small{font-size:15px;font-weight:600;margin-left:3px;}
+  .strip .it .u{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:11.5px;color:var(--ink-3);margin-top:7px;
+  }
+
+  /* ================= 区块 ================= */
+  .blk{padding:26px 62px 0 62px;}
+  .blk .bt{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:15px;font-weight:700;color:var(--navy);
+    display:flex;align-items:baseline;gap:11px;
+  }
+  .blk .bt .no{
+    font-size:11px;color:#fff;background:var(--clay);
+    padding:3px 7px;letter-spacing:.08em;
+  }
+  .blk .bt .hint{
+    margin-left:auto;font-size:11.5px;color:var(--ink-3);font-weight:400;
+  }
+
+  /* ================= 表格 ================= */
+  table{width:100%;border-collapse:collapse;margin-top:16px;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:13.5px;}
+  thead th{
+    background:#3d3730;color:#ffffff;font-weight:600;font-size:12px;
+    padding:11px 16px;text-align:right;letter-spacing:.03em;white-space:nowrap;
+  }
+  thead th:first-child{text-align:left;}
+  tbody td{padding:12px 16px;text-align:right;border-bottom:1px solid var(--line-2);}
+  tbody td:first-child{text-align:left;color:var(--ink-2);}
+  tbody tr:nth-child(even) td{background:var(--band);}
+  tbody tr.hero td{background:var(--clay-l);font-weight:700;color:var(--navy);}
+  tbody tr.total td{
+    background:var(--paper);border-top:1.5px solid var(--navy);border-bottom:none;font-weight:700;color:var(--navy);
+  }
+  .neg{color:var(--red);font-weight:600;}
+  .pos{color:var(--green);font-weight:600;}
+  .mut{color:var(--ink-3);font-weight:600;}
+
+  /* ================= 图表 ================= */
+  .chart{margin-top:18px;border:1px solid var(--line);padding:22px 26px 16px 26px;}
+  .chart .ct{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:13px;font-weight:700;color:var(--navy);
+  }
+  .chart .cs{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:11px;color:var(--ink-3);margin-top:4px;
+  }
+  .plot{display:flex;align-items:flex-end;height:138px;margin-top:18px;
+        border-bottom:1px solid var(--line);}
+  .grp{flex:1;display:flex;justify-content:center;align-items:flex-end;gap:8px;height:100%;}
+  .col{width:46px;position:relative;display:flex;justify-content:center;}
+  .col b{
+    position:absolute;top:-20px;font-size:11.5px;font-weight:700;color:var(--navy);
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;white-space:nowrap;
+  }
+  .col i{display:block;width:100%;}
+  .c-navy{background:linear-gradient(180deg,#4a4238,#2b2723);}
+  .c-red{background:linear-gradient(180deg,#cf7050,#bd5d3a);}
+  .c-gray{background:linear-gradient(180deg,#c4b9a8,#a89b88);}
+  .xax{display:flex;margin-top:10px;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;}
+  .xax div{flex:1;text-align:center;font-size:11.5px;color:var(--ink-3);line-height:1.6;}
+  .xax div b{color:var(--ink-2);font-weight:600;}
+  .lg{display:flex;gap:22px;margin-top:13px;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:11.5px;color:var(--ink-2);}
+  .lg i{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:-1px;}
+
+  /* ================= 要点卡 ================= */
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;}
+  .card{border:1px solid var(--line);border-top:2.5px solid var(--clay);padding:20px 22px 18px 22px;}
+  .card.rd{border-top-color:var(--navy);}
+  .card .ct{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;font-weight:700;color:var(--navy);
+  }
+  .card .cd{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:12.5px;color:var(--ink-2);line-height:1.95;margin-top:10px;
+  }
+  .card .cd b{color:var(--navy);}
+
+  /* ================= 判定 ================= */
+  .judge{margin-top:16px;}
+  .jr{display:grid;grid-template-columns:1.6fr 120px 1.7fr;border-bottom:1px solid var(--line-2);}
+  .jr.h{background:#3d3730;color:#ffffff;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:12px;font-weight:600;}
+  .jr.h > div{padding:11px 16px;color:#ffffff;}
+  .jr > div{
+    padding:13px 16px;font-size:13.5px;color:var(--ink-2);
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;display:flex;align-items:center;
+  }
+  .jr .q{color:var(--navy);font-weight:600;}
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;
+    padding:4px 12px;border-radius:2px;letter-spacing:.04em;}
+  .pl-ok{background:#edf2ea;color:#4a7c59;}
+  .pl-no{background:var(--clay-l);color:var(--clay);}
+  .pl-mid{background:#f6f0e2;color:#8a7328;}
+
+  /* ================= 提示 ================= */
+  .alert{
+    margin-top:18px;background:#f9f0e9;border:1px solid #ead9cb;border-left:3px solid var(--clay);
+    padding:18px 22px;
+  }
+  .alert .at{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:13px;font-weight:700;color:#9a4728;
+  }
+  .alert .ad{
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:12.5px;color:var(--ink-2);line-height:1.95;margin-top:8px;
+  }
+  .alert .num{display:flex;align-items:baseline;gap:14px;margin-top:12px;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;}
+  .alert .num b{font-size:21px;font-weight:700;color:var(--red);letter-spacing:-.3px;}
+  .alert .num span{font-size:12px;color:var(--ink-3);}
+
+  /* ================= 页脚 ================= */
+  .ft{
+    margin-top:26px;border-top:1px solid var(--line);padding:18px 62px 30px 62px;
+    font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:11px;color:var(--ink-3);line-height:1.95;
+  }
+  .ft b{color:var(--ink-2);font-weight:600;}
+</style>
+</head>
+<body>
+
+<!-- ==================================================================== -->
+<!-- 第一页：结论 + 关键数字 + 核心证据                                      -->
+<!-- ==================================================================== -->
+<div class="sheet">
+
+  <div class="hd">
+    <div class="l">
+      <div class="kicker">小 程 序 运 营 分 析</div>
+      <h1>加推效果评估报告</h1>
+      <div class="sub">奇多卡超级特权小程序 · 鑫城-彬哥盘与新增投放盘的归因分析</div>
+    </div>
+    <div class="r">
+      <div class="pg">PAGE 01 / 02</div>
+      <div class="pr">统计区间<br>2026-09-01 — 2026-10-13</div>
+    </div>
+  </div>
+  <div class="rule"></div>
+
+  <div class="verdict">
+    <div class="tag">核 心 结 论</div>
+    <h2>加推有产出，但<em>不是增长</em><br>它补上了彬哥盘的下滑，没把总盘子做大。</h2>
+    <div class="note">
+      加推盘日均收入 +32.7%，彬哥盘 −3.3%，而全组日均收入仅 +0.7% —— 增量被完全抵消。<br>
+      同期小程序日活 −12.0%、新用户 −32.1%。
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="it">
+      <div class="k">全口径累计收入</div>
+      <div class="v">70.17<small>万</small></div>
+      <div class="u">元 · 43 天</div>
+    </div>
+    <div class="it">
+      <div class="k">加推盘累计贡献</div>
+      <div class="v">6.39<small>万</small></div>
+      <div class="u">元 · 占总收入 9.1%</div>
+    </div>
+    <div class="it">
+      <div class="k">加推盘累计订单</div>
+      <div class="v">174,306</div>
+      <div class="u">笔 · 单均 0.37 元</div>
+    </div>
+  </div>
+
+  <div class="blk">
+    <div class="bt"><span class="no">证据 01</span>全组总量未被做大，加推的增量被存量下滑抵消<span class="hint">单位：元 / 天</span></div>
+    <table>
+      <thead>
+        <tr><th>群组层面</th><th>基线期 09-27~09-30</th><th>近期 10-07~10-13</th><th>变化</th><th>解读</th></tr>
+      </thead>
+      <tbody>
+        <tr class="hero"><td>全组日均收入</td><td>16,909.32</td><td>17,030.63</td><td class="mut">+0.7%</td><td>总量未被做大</td></tr>
+        <tr><td>彬哥盘日均收入</td><td>15,034.16</td><td>14,542.62</td><td class="neg">−3.3%</td><td>存量盘在下滑</td></tr>
+        <tr><td>加推盘日均收入</td><td>1,875.16</td><td>2,488.01</td><td class="pos">+32.7%</td><td>自身在放量</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="blk" style="padding-top:24px;">
+    <div class="chart">
+      <div class="ct">图 1　日均收入对比：加推涨了，总盘子没动</div>
+      <div class="cs">统一按最大值 17,031 定标　｜　数据来源：两份源表拼合后的四项目逐日数据</div>
+      <div class="plot">
+        <div class="grp">
+          <div class="col" style="height:100%;"><b>15,034</b><i class="c-navy" style="height:88.3%;"></i></div>
+          <div class="col" style="height:100%;"><b>1,875</b><i class="c-red" style="height:11.0%;"></i></div>
+        </div>
+        <div class="grp">
+          <div class="col" style="height:100%;"><b>14,543</b><i class="c-navy" style="height:85.4%;"></i></div>
+          <div class="col" style="height:100%;"><b>2,488</b><i class="c-red" style="height:14.6%;"></i></div>
+        </div>
+        <div class="grp">
+          <div class="col" style="height:100%;"><b>16,909</b><i class="c-gray" style="height:99.3%;"></i></div>
+          <div class="col" style="height:100%;"><b>17,031</b><i class="c-gray" style="height:100%;"></i></div>
+        </div>
+      </div>
+      <div class="xax">
+        <div><b>基线期</b><br>彬哥盘 / 加推盘</div>
+        <div><b>近期</b><br>彬哥盘 / 加推盘</div>
+        <div><b>全组日均</b><br>左 = 基线　右 = 近期</div>
+      </div>
+      <div class="lg">
+        <div><i class="c-navy"></i>彬哥盘</div>
+        <div><i class="c-red"></i>加推盘</div>
+        <div><i class="c-gray"></i>全组合计</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ft">
+    <b>数据来源</b>　鑫城-彬哥 小程序.xls（旧版 4 项目 · 43 天）与新版（2 项目 · 43 天）两份源文件拼合　｜　
+    <b>口径</b>　彬哥盘 = 鑫城-彬哥 + CX；加推盘 = CX-通用-adq-0902 + CX-通用-adq-1002　｜　
+    <b>校验</b>　四项目逐日相加与总表「汇总（总）」43 天完全吻合，差额为 0
+  </div>
+
+</div>
+
+<!-- ==================================================================== -->
+<!-- 第二页：分项判定 + 证据 + 待补数据                                      -->
+<!-- ==================================================================== -->
+<div class="sheet">
+
+  <div class="hd">
+    <div class="l">
+      <div class="kicker">小 程 序 运 营 分 析</div>
+      <h1>分项判定与后续建议</h1>
+      <div class="sub">加推效果评估报告 · 续页</div>
+    </div>
+    <div class="r">
+      <div class="pg">PAGE 02 / 02</div>
+      <div class="pr">统计区间<br>2026-09-01 — 2026-10-13</div>
+    </div>
+  </div>
+  <div class="rule"></div>
+
+  <div class="blk" style="padding-top:32px;">
+    <div class="bt"><span class="no">证据 02</span>加推确实产生了收入，但单位产出仅为存量盘的一半</div>
+    <table>
+      <thead>
+        <tr><th>项目</th><th>有效天数</th><th>汇总收入（元）</th><th>订单总数</th><th>单均收入（元）</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>彬哥盘（鑫城-彬哥 + CX）</td><td>43</td><td>637,774.58</td><td>920,957</td><td>0.6925</td></tr>
+        <tr><td>加推盘（0902 + 1002）</td><td>40 / 13</td><td>63,940.29</td><td>174,306</td><td>0.3668</td></tr>
+        <tr class="total"><td>全口径合计</td><td>43</td><td>701,714.87</td><td>1,095,263</td><td>0.6407</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="blk" style="padding-top:26px;">
+    <div class="cards">
+      <div class="card">
+        <div class="ct">加推的收入占比 9.1%</div>
+        <div class="cd">
+          累计 <b>63,940.29 元</b>，两条线分别为 0902 贡献 51,016.34 元（40 天）、
+          1002 贡献 12,923.95 元（13 天）。占比在上升：基线期 11.1% → 近期 <b>14.6%</b>。
+        </div>
+      </div>
+      <div class="card rd">
+        <div class="ct">单均收入仅为彬哥盘的 53%</div>
+        <div class="cd">
+          加推盘 <b>0.3668 元 / 笔</b>，彬哥盘 <b>0.6925 元 / 笔</b>。
+          加推用户的单位产出显著偏低 —— 但<b>没有投放成本，无法判断是否仍能覆盖投入</b>。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="blk" style="padding-top:30px;">
+    <div class="bt"><span class="no">判定</span>按命题层级拆解<span class="hint">共 5 项</span></div>
+    <div class="judge">
+      <div class="jr h"><div>命题层级</div><div>判定</div><div>主要依据</div></div>
+      <div class="jr"><div class="q">加推是否产生了收入？</div><div><span class="pill pl-ok">成立</span></div><div>累计 63,940.29 元、174,306 笔，占 9.1%</div></div>
+      <div class="jr"><div class="q">加推是否贡献了用户活跃？</div><div><span class="pill pl-ok">成立</span></div><div>收入反推，贡献下限 11% ~ 15%</div></div>
+      <div class="jr"><div class="q">加推是否把盘子做大了？</div><div><span class="pill pl-no">不成立</span></div><div>全组日均收入仅 +0.7%，增量被存量下滑抵消</div></div>
+      <div class="jr"><div class="q">加推是否显著优于存量盘？</div><div><span class="pill pl-no">不成立</span></div><div>单均收入 0.3668 元，仅为彬哥盘的 53%</div></div>
+      <div class="jr" style="border-bottom:1px solid var(--line);"><div class="q">加推是否值得继续投放？</div><div><span class="pill pl-mid">无法判断</span></div><div>缺投放成本，ROI 无法计算</div></div>
+    </div>
+  </div>
+
+  <div class="blk" style="padding-top:26px;">
+    <div class="alert">
+      <div class="at">⚠　需优先澄清：数量级不匹配</div>
+      <div class="ad">
+        内部记录显示「CX 日均挪 4 万粉」，而小程序同期日均新用户仅 4,728 人 ——
+        若「4 万粉」非小程序访问人数，则本报告的收入代理推理仍然有效；若这些粉并未真正进入小程序，
+        则加推连活跃贡献都不成立。
+      </div>
+      <div class="num">
+        <b>40,000</b><span>粉 / 天（记录值）</span>
+        <span style="font-size:15px;color:#8b97a8;font-weight:700;">vs</span>
+        <b style="color:#2b2723;">4,728</b><span>人 / 天（实测）</span>
+        <span style="margin-left:auto;font-size:13px;">相差 <b style="font-size:17px;">8.5</b> 倍</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="blk" style="padding-top:28px;">
+    <div class="bt"><span class="no">建议</span>下一步需要补充的数据<span class="hint">优先级由高到低</span></div>
+    <table>
+      <thead>
+        <tr><th>补充数据</th><th>优先级</th><th>可解锁的结论</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>加推线的投放成本（花了多少钱）</td><td><span class="pill pl-no">高</span></td><td style="text-align:left;">ROI 判定，回答「值不值得继续投」</td></tr>
+        <tr><td>「4 万粉 / 天」的口径定义</td><td><span class="pill pl-no">高</span></td><td style="text-align:left;">解决 8.5 倍矛盾，确立推理是否成立</td></tr>
+        <tr><td>加推前的日活基准（9/4 之前）</td><td><span class="pill pl-mid">中</span></td><td style="text-align:left;">判断加推对日活是否产生过净拉动</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="ft" style="margin-top:32px;">
+    <b>局限说明</b>　① 日活数据无项目维度，本报告涉及日活归属的推论均基于收入代理，属推断而非实测；
+    ② 相关性结论基于 17 天窗口，样本较短且存在自相关，仅说明同步性，不构成因果；
+    ③ 加推线的收入与订单数据来自旧版源文件，新版已移除该部分；
+    ④ 本报告不含任何投放成本数据，因此不对投资回报率作任何判断。
+  </div>
+
+</div>
+
+</body>
+</html>
